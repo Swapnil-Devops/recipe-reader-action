@@ -20,7 +20,15 @@ try {
   const schema = JSON.parse(schemaContent);
 
   // Validate the JSON data against the schema
-  const ajv = new Ajv();
+  const ajv = new Ajv({
+    // Configure the validator to support the desired JSON Schema draft version
+    $data: true,
+    allErrors: true,
+    strictKeywords: false,
+    strictTypes: false
+  });
+
+  // Add the schema to the validator
   const validate = ajv.compile(schema);
   const isValid = validate(data);
 

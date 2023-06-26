@@ -1,28 +1,38 @@
 const core = require('@actions/core');
-const github = require('@actions/github');
 const fs = require('fs');
+const Ajv = require('ajv');
 
 try {
-  // Read the JSON file path from the input
+  // Read the JSON file path and schema file path from the inputs
   const jsonFilePath = core.getInput('json-file');
+  const schemaFilePath = core.getInput('schema-file');
 
   // Read the JSON file content
   const jsonContent = fs.readFileSync(jsonFilePath, 'utf8');
 
-  // Read the schema file path from the input
-  const schemaFilePath = core.getInput('schema-file');
+  // Parse the JSON content into an object
+  const data = JSON.parse(jsonContent);
 
   // Read the schema file content
   const schemaContent = fs.readFileSync(schemaFilePath, 'utf8');
 
-  // Perform validation using your chosen JSON schema library
-  // Replace this section with your own validation logic
+  // Parse the schema content into a schema object
+  const schema = JSON.parse(schemaContent);
 
-  // Log the JSON content
-  console.log('JSON Content:', jsonContent);
+  // Validate the JSON data against the schema
+  const ajv = new Ajv();
+  const validate = ajv.compile(schema);
+  const isValid = validate(data);
 
-  // Set the JSON content as an output
-  core.setOutput('json', jsonContent);
+  if (!isValid) {
+    // If validation fails, retrieve the validation errors
+    const errors = validate.errors.map(error => error.message);
+    core.setOutput('errors', JSON.stringify(errors));
+    core.setFailed(`JSON validation failed:\n${errors.join('\n')}`);
+  } else {
+    // If validation succeeds, set the JSON data as the output
+    core.setOutput('json', jsonContent);
+  }
 } catch (error) {
   core.setFailed(`Action failed with error: ${error}`);
 }
